@@ -206,8 +206,6 @@ summary(mega_model_final)
 # Given the correlation among observations from the same hive, do you think it's 
 # a good use of time to sample each hive multiple times? Why or why not?
 
-#None of the below works lmao 
-#We should be able to pull the random effect from the summary, but I can't find it 
 
 #Trying VarCorr
 
