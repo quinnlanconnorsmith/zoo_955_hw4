@@ -1,14 +1,15 @@
 library(tidyverse)
 library(nlme)
 
+
 bees_df <- read_tsv('data/bees.txt') %>% 
   mutate(
     # Per Olaf's instruction at the end of class 10/4, turn 
     # Hive from a numeric into a factor.
     Hive = as.factor(Hive),
     # Also per Olaf's instruction at the end of class 10/4,
-    # convert the "Infection" metric which quantifies the 
-    # degreee of infection into a simple yes/no for whether
+    # convert the "isInfected" metric which quantifies the 
+    # degreee of isInfected into a simple yes/no for whether
     # a bee is infected or not.
     isInfected = Infection > 0)
 
@@ -43,18 +44,20 @@ bees_df[bees_df == -Inf] <-0
 
 model5 <- lm(logspobee~Hive, data=bees_df)
 plot(model5)
+
 summary(model5)
 #So log is pretty good! 
+#Variance seems to be fairly constant across hives. 
 
 ##### Q3 ##### 
 
-# Develop a simple linear model for transformed spore density. Include infection 
-# (fInfection01), number of bees (sBeesN) and their interaction as explanatory 
+# Develop a simple linear model for transformed spore density. Include isInfected 
+# (fisInfected01), number of bees (sBeesN) and their interaction as explanatory 
 # variables. Check for a hive effect by plotting standardized residuals (see the 
 # residuals(yourmodel, type='pearson') function) against hive ID (fhive). Show 
 # your code and your plots. Do residuals look homogenous among hives?
 
-model6 <- lm(logspobee ~ Infection + BeesN + Infection*BeesN, data=bees_df)
+model6 <- lm(logspobee ~ isInfected + BeesN + isInfected*BeesN, data=bees_df)
 summary(model6)
 plot(bees_df$Hive, residuals(model6, type='pearson'))
 #Residuals do not look homogeneous among the hives 
@@ -75,10 +78,10 @@ plot(bees_df$Hive, residuals(model6, type='pearson'))
 ##### Q6 ##### 
 
 # Step 4. Fit the "beyond optimal" ME model(s) with lmer() in the lme4 package 
-# (transformed spore density is response, fInfection01, sBeesN, and interaction 
+# (transformed spore density is response, fisInfected01, sBeesN, and interaction 
 # are the explanatory variables). Show your code.
 
-mega_model<- lme(logspobee ~ Infection + BeesN + Infection*BeesN, random = ~1|Hive, method = 'REML', data=bees_df)
+mega_model<- lme(logspobee ~ isInfected + BeesN + isInfected*BeesN, random = ~1|Hive, method = 'REML', data=bees_df)
 summary(mega_model)
 plot(mega_model)
 
@@ -91,9 +94,10 @@ plot(mega_model)
 # model). Show your work and the results. Which random effect structure do you 
 # choose based on the results?
 
-anova(model6, mega_model)
+gls_model <- gls(logspobee ~ isInfected + BeesN + isInfected*BeesN, data=bees_df)
+anova(gls_model, mega_model)
 
-#??????????????
+#The random intercept (Hive) is a better model because p<0.001 and AIC is lower 
 
 ##### Q8 ##### 
 
@@ -108,7 +112,7 @@ plot(mega_model_fitted,mega_model_residuals)
 abline(h=0)
 
 #The rest 
-plot(mega_model_residuals~Infection, data=bees_df)
+plot(mega_model_residuals~isInfected, data=bees_df)
 abline(h=0)
 plot(mega_model_residuals~BeesN, data=bees_df)
 abline(h=0)
@@ -122,11 +126,11 @@ abline(h=0)
 # reduced model without the interaction term, also fit with ML. Use anova() to 
 # compare the models. Which model do you choose? Why?
 
-mega_model2<- lme(logspobee ~ Infection + BeesN + Infection*BeesN, random = ~1|Hive, method = 'ML', data=bees_df)
-mega_model3<- lme(logspobee ~ Infection + BeesN, random = ~1|Hive, method = 'ML', data=bees_df)
+mega_model2<- lme(logspobee ~ isInfected + BeesN + isInfected*BeesN, random = ~1|Hive, method = 'ML', data=bees_df)
+mega_model3<- lme(logspobee ~ isInfected + BeesN, random = ~1|Hive, method = 'ML', data=bees_df)
 anova(mega_model2, mega_model3)
 
-#This interaction is not significant 
+#This interaction term can be dropped
 
 
 ##### Q10 ##### 
@@ -134,20 +138,20 @@ anova(mega_model2, mega_model3)
 # Step 8. Iterate #7 to arrive at the final model. Show your work. What is your 
 # final set of fixed effects?
 
-mega_model2<- lme(logspobee ~ Infection + BeesN + Infection*BeesN, random = ~1|Hive, method = 'ML', data=bees_df)
-mega_model_dropinf<- lme(logspobee ~ BeesN, random = ~1|Hive, method = 'ML', data=bees_df)
-mega_model2_dropbees<- lme(logspobee ~ Infection, random = ~1|Hive, method = 'ML', data=bees_df)
+mega_model4<- lme(logspobee ~ isInfected + BeesN, random = ~1|Hive, method = 'ML', data=bees_df)
+mega_model4_dropinf<- lme(logspobee ~ BeesN, random = ~1|Hive, method = 'ML', data=bees_df)
+mega_model4_dropbees<- lme(logspobee ~ isInfected, random = ~1|Hive, method = 'ML', data=bees_df)
 
-summary(mega_model2)
-summary(mega_model_dropinf)
-summary(mega_model2_dropbees)
+summary(mega_model4)
+summary(mega_model4_dropinf)
+summary(mega_model4_dropbees)
 
-anova(mega_model2, mega_model_dropinf)
-#Okay, so infection is significant 
-anova(mega_model2, mega_model2_dropbees)
-#Bees are not significant! (Speaking in terms of the model, not in real life)
+anova(mega_model4, mega_model4_dropinf)
+#Okay, so isInfected is significant 
+anova(mega_model4, mega_model4_dropbees)
+#Bees are also significant 
 
-mega_model_final_ML <-lme(logspobee ~ Infection, random = ~1|Hive, method = 'ML', data=bees_df)
+mega_model_final_ML <-lme(logspobee ~ isInfected+ BeesN, random = ~1|Hive, method = 'ML', data=bees_df)
 summary(mega_model_final_ML)
 ##### Q11 ##### 
 
@@ -156,7 +160,7 @@ summary(mega_model_final_ML)
 # plotting Pearson standardized residuals vs. explanatory variables. Are there 
 # issues with the model? If so, how might you address them?
 
-mega_model_final <-lme(logspobee ~ Infection, random = ~1|Hive, method = 'REML', data=bees_df)
+mega_model_final <-lme(logspobee ~ isInfected+BeesN, random = ~1|Hive, method = 'REML', data=bees_df)
 hist(residuals(mega_model_final))
 #Slight left tail 
 final_residuals <-residuals(mega_model_final, type='pearson')
@@ -167,12 +171,15 @@ plot(final_fitted,final_residuals)
 abline(h=0)
 
 #The rest 
-plot(final_residuals~Infection, data=bees_df)
+plot(final_residuals~isInfected, data=bees_df)
 abline(h=0)
 plot(final_residuals~BeesN, data=bees_df)
 abline(h=0)
 plot(final_residuals~Hive, data=bees_df)
 abline(h=0)
+
+#Still looks alright, balanced around 0 
+#Bees as a model term was not significant but the model had a slightly better AIC. We could drop that to make a simpler model
 
 ##### Q12 ##### 
 
@@ -180,8 +187,9 @@ abline(h=0)
 # you learned about American Foulbrood?
 
 summary(mega_model_final)
-#Given the bees_df data, number of bees is not contained in the most parsimonious model 
-#However, log spores is correlated to determining infection 
+#Given the bees_df data, an interaction between Bees and binomial infection rate is not significant
+#However, log spores is correlated to determining Infection and the number of bees
+#BeesN had an statistically insignicant p-value but a probable biological p-value 
 
 ##### Q13 ##### 
 
@@ -193,20 +201,16 @@ summary(mega_model_final)
 #None of the below works lmao 
 #We should be able to pull the random effect from the summary, but I can't find it 
 
-f1 <- function(final_fitted) {
-  c(re_var = c(VarCorr(final_fitted)[[1]]),  ## RE variance
-    resid_var  = sigma(final_fitted)^2)      ## residual variance
-}
+#Trying VarCorr
 
-das_boot <- confint(mega_model_final,
-              method = "boot",
-              nsim = 1000,
-              FUN = function(fitted) {
-                c(re_var = c(VarCorr(fitted)[[1]]),
-                  resid_var  = sigma(fitted)^2)
-              })
+VarCorr(mega_model_final)
+vhre <- .9399107
+vres <- 0.1154410
 
-get_variance(mega_model_final, component =c("random"))
-var.random(mega_model_final)
-?get_variance
-??get_variance
+vhre/(vhre+vres)
+
+#Correlation between observations is high (.8906137)
+#In general, observations will be similar within the same hive 
+#However, some individual hive variance is large, so in a study with few hives, 
+#repeated measures of a hive may be beneficial 
+
