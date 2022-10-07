@@ -225,4 +225,4 @@ var_resid <- as.numeric(var_hive_resid[2])
 var_hive/(var_hive + var_resid)
 
 # The observations from the same hive are highly correlated, so samples from the
-# same hive
+# same hive would not be as useful.
