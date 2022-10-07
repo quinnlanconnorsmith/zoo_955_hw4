@@ -34,6 +34,7 @@ bees_df_transf <- bees_df %>%
 # Try log transform
 lm_logspobee_hive <- lm(LogSpobee ~ Hive, data = bees_df_transf)
 plot(lm_logspobee_hive, ask=F) 
+summary(lm_logspobee_hive)
 # This one appears to be the best because variance is constant (see plot 1 from this
 # output) and the data are normally distributed (see plot 2, the Q-Q plot)
 
@@ -59,11 +60,11 @@ plot(lm_ctrspobee_hive, ask=F)
 
 lm_logspobee <- lm(LogSpobee ~ isInfected + BeesN + isInfected*BeesN,
                    data = bees_df_transf)
-
+summary(lm_logspobee)
 plot(bees_df_transf$Hive, residuals(lm_logspobee, type='pearson')) # Example above
 plot(rstandard(lm_logspobee) ~ Hive, data = bees_df_transf) # Example from reading
 
-# TODO: write conclusion to this question
+# No, there is great variety in the variances and no apparent trend
 
 ##### Q4 ##### 
 
@@ -90,6 +91,8 @@ plot(rstandard(lm_logspobee) ~ Hive, data = bees_df_transf) # Example from readi
 
 lme_formula <-  formula(LogSpobee ~ isInfected + BeesN + isInfected*BeesN)
 lme_logspobee <- lme(lme_formula, random = ~1|Hive, method = "REML", data = bees_df_transf)
+summary(lme_logspobee)
+plot(lme_logspobee, ask=F) 
 
 ##### Q7 ##### 
 
@@ -102,6 +105,9 @@ lme_logspobee <- lme(lme_formula, random = ~1|Hive, method = "REML", data = bees
 
 gls_logspobee <- gls(lme_formula, data = bees_df_transf)
 anova(gls_logspobee, lme_logspobee)
+
+# The model with Hives as the random effect structure is better due to the p-value
+# showing it is significant and having the lower AIC.
 
 ##### Q8 ##### 
 
@@ -124,7 +130,7 @@ abline(h = 0, lty = 'dotted')
 plot(res ~ Hive, data = bees_df_transf, ylab = "residuals")
 abline(h = 0, lty = 'dotted')
 
-# TODO: I think these look good??
+# Variances look pretty well distributed with no specific trends.
 
 # Reset mfrow
 par(mfrow = c(1,1))
@@ -138,23 +144,30 @@ summary(lme_logspobee)
 # compare the models. Which model do you choose? Why?
 
 lme_logspobee_ml_full <- lme(lme_formula, random = ~1|Hive, method = "ML", data = bees_df_transf)
-lme_logspobee_ml_nointeraction <- update(lme_logspobee_ml_full, .~. -isInfected*BeesN)
+lme_logspobee_ml_nointeraction <- lme(LogSpobee ~ isInfected + BeesN,
+                                       random = ~1|Hive, method = "ML", data = bees_df_transf)
 anova(lme_logspobee_ml_full, lme_logspobee_ml_nointeraction)
 
-# The interaction term was significant, so we should keep it in the model
+# Keeping the interaction term was not significantly different from dropping it, however
+# dropping it gives us fewer degrees of freedom (we can predict more) and has a lower AIC.
+# So, we should choose the model without the interaction term.
 
 ##### Q10 ##### 
 
 # Step 8. Iterate #7 to arrive at the final model. Show your work. What is your 
 # final set of fixed effects?
 
-lme_logspobee_ml_noinfection <- update(lme_logspobee_ml_full, .~. -isInfected)
-anova(lme_logspobee_ml_full, lme_logspobee_ml_noinfection)
-# Infection is a significant term
+lme_logspobee_ml_nointeraction <- lme(LogSpobee ~ isInfected + BeesN,
+                                      random = ~1|Hive, method = "ML", data = bees_df_transf)
 
-lme_logspobee_ml_nobees <- update(lme_logspobee_ml_full, .~. -BeesN)
-anova(lme_logspobee_ml_full, lme_logspobee_ml_nobees)
-# No p-value showed up for this ^ ??
+lme_logspobee_ml_noinfection <- update(lme_logspobee_ml_nointeraction, .~. -isInfected)
+anova(lme_logspobee_ml_nointeraction, lme_logspobee_ml_noinfection)
+# The models are significantly different and the model without infection is worse than
+# the model with it based on a higher AIC.
+
+lme_logspobee_ml_nobees <- lme(LogSpobee ~ isInfected, random = ~1|Hive, method = "ML", data = bees_df_transf)
+anova(lme_logspobee_ml_nointeraction, lme_logspobee_ml_nobees)
+# The models are not significantly different but the model with the bees is slightly better due to AIC
 
 ##### Q11 ##### 
 
@@ -163,9 +176,9 @@ anova(lme_logspobee_ml_full, lme_logspobee_ml_nobees)
 # plotting Pearson standardized residuals vs. explanatory variables. Are there 
 # issues with the model? If so, how might you address them?
 
-lme_logspobee_final <- lme_logspobee
-# TODO: I think it's still the full model based on what I explored above:
-# But this is just the same as before
+lme_logspobee_final <- lme(LogSpobee ~ isInfected + BeesN,
+                           random = ~1|Hive, method = "REML", data = bees_df_transf)
+
 hist(residuals(lme_logspobee_final))
 
 res_final <- residuals(lme_logspobee_final, type='pearson')
@@ -187,6 +200,7 @@ abline(h = 0, lty = 'dotted')
 # Reset mfrow
 par(mfrow = c(1,1))
 
+# There's a slight pattern in the variances of the residuals. 
 
 ##### Q12 ##### 
 
@@ -202,4 +216,13 @@ summary(lme_logspobee_final)
 # Given the correlation among observations from the same hive, do you think it's 
 # a good use of time to sample each hive multiple times? Why or why not?
 
-# TODO: not sure how to get the variance
+# Get the variance of the random effect
+var_hive_resid <- VarCorr(lme_logspobee_final)
+var_hive <- as.numeric(var_hive_resid[1])
+var_resid <- as.numeric(var_hive_resid[2])
+
+# Correlation
+var_hive/(var_hive + var_resid)
+
+# The observations from the same hive are highly correlated, so samples from the
+# same hive
