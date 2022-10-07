@@ -27,15 +27,15 @@ plot(model1, ask=F)
 # (or at least improve it). Which transformation of spore density seems reasonable? Why?
 
 model2 <- lm((Spobee)^2~Hive, data=bees_df)
-plot(model2)
+plot(model2, ask=F)
 summary(model2)
 #Still different w/ square transform
 model3 <- lm((Spobee)^0.5~Hive, data=bees_df)
-plot(model3)
+plot(model3, ask=F)
 summary(model3)
 #I guess this is better? Still got some wildly different estimates 
 model4 <- lm((Spobee)^0.25~Hive, data=bees_df)
-plot(model4)
+plot(model4, ask =F)
 summary(model4)
 
 #Log transform
@@ -43,7 +43,7 @@ bees_df$logspobee <-log10(bees_df$Spobee)
 bees_df[bees_df == -Inf] <-0
 
 model5 <- lm(logspobee~Hive, data=bees_df)
-plot(model5)
+plot(model5, ask=F)
 
 summary(model5)
 #So log is pretty good! 
@@ -83,7 +83,7 @@ plot(bees_df$Hive, residuals(model6, type='pearson'))
 
 mega_model<- lme(logspobee ~ isInfected + BeesN + isInfected*BeesN, random = ~1|Hive, method = 'REML', data=bees_df)
 summary(mega_model)
-plot(mega_model)
+plot(mega_model, ask=F)
 
 ##### Q7 ##### 
 
@@ -204,7 +204,7 @@ summary(mega_model_final)
 #Trying VarCorr
 
 # Get the variance of the random effect
-var_hive_resid <- VarCorr(lme_logspobee_final)
+var_hive_resid <- VarCorr(mega_model_final)
 var_hive <- as.numeric(var_hive_resid[1])
 var_resid <- as.numeric(var_hive_resid[2])
 
