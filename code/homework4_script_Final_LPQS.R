@@ -59,7 +59,7 @@ summary(model5)
 
 model6 <- lm(logspobee ~ isInfected + BeesN + isInfected*BeesN, data=bees_df)
 summary(model6)
-png('outputs/question3_plot.png')
+png('outputs/question3_plot.png', height=1200,width=1200, units='px')
 plot(bees_df$Hive, residuals(model6, type='pearson'))
 dev.off()
 #Residuals do not look homogeneous among the hives 
@@ -110,7 +110,7 @@ anova(gls_model, mega_model)
 mega_model_residuals <- residuals(mega_model, type='pearson')
 mega_model_fitted <- fitted.values(mega_model)
 
-png('outputs/question8_plot.png')
+png('outputs/question8_plot.png', height=1200,width=1200, units='px')
 par(mfrow=c(2,2))
 #Residuals vs. fitted 
 plot(mega_model_fitted,mega_model_residuals)
